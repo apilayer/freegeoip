@@ -1,7 +1,8 @@
 FROM golang:1.9-alpine
 
-RUN apk add --no-cache git libcap shadow
-RUN useradd -ms /bin/bash freegeoip
+RUN \
+      apk add --no-cache git libcap shadow && \
+      useradd -ms /bin/bash freegeoip
 COPY cmd/freegeoip/public /var/www
 ADD . /go/src/github.com/apilayer/freegeoip
 WORKDIR /go/src/github.com/apilayer/freegeoip/cmd/freegeoip
