@@ -1,15 +1,15 @@
-FROM golang:1.9
+FROM golang:1.9-alpine
 
 COPY cmd/freegeoip/public /var/www
 
 ADD . /go/src/github.com/apilayer/freegeoip
-RUN \
-	cd /go/src/github.com/apilayer/freegeoip/cmd/freegeoip && \
-	go get -d && go install && \
-	apt-get update && apt-get install -y libcap2-bin && \
-	setcap cap_net_bind_service=+ep /go/bin/freegeoip && \
-	apt-get clean && rm -rf /var/lib/apt/lists/* && \
-	useradd -ms /bin/bash freegeoip
+WORKDIR /go/src/github.com/apilayer/freegeoip/cmd/freegeoip
+RUN apk update
+RUN apk add git libcap shadow
+RUN go get -d
+RUN go install
+RUN setcap cap_net_bind_service=+ep /go/bin/freegeoip
+RUN useradd -ms /bin/bash freegeoip
 
 USER freegeoip
 ENTRYPOINT ["/go/bin/freegeoip"]
