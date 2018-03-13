@@ -1,0 +1,2 @@
+# Nothing to build
+build: ;
