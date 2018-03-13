@@ -1,0 +1,12 @@
+{
+  "name": "ip-location",
+  "description": "Geolocation service (IP to location)",
+  "owner": "VOID",
+  "type": "service",
+  "status": "live",
+  "region-type": "multi-region",
+  "deploy": {
+    "service-dependencies": []
+  },
+  "tags": ["go"]
+}

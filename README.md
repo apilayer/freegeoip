@@ -1,3 +1,10 @@
+# ip-location
+
+This service is used for getting location information based on user IP address. It is forked from apilayer/freegeoip and custom comfiguration added to make it run on Pipedrive infrastructure.
+
+Original documentation follows:
+
+
 # freegeoip
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
