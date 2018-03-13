@@ -1,0 +1,36 @@
+version: '3.2'
+services:
+  ip-location:
+    image: pipedrive/ip-location:${DOCKER_TAG}
+    ports:
+      - mode: host
+        target: 8080
+    command: /go/bin/freegeoip
+    deploy:
+      replicas: ${SCALE_INSTANCES}
+      resources:
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+        limits:
+          cpus: '1'
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        delay: 1s
+        window: 10s
+      placement:
+        constraints:
+          - node.labels.com.pipedrive.nodegroup == ${NODE_GROUP:-default}
+      labels:
+        - com.docker.ucp.access.label=/Shared
+   environment:
+      ENV_ID: ${ENV_ID}
+      REGION_NAME: ${REGION_NAME}
+      SERVICE_8080_NAME: ip-location
+      SERVICE_8080_CHECK_HTTP: '/health-ip-location'
+      SERVICE_8080_CHECK_INTERVAL: 10s
+    stop_grace_period: 1m
+    read_only: false

@@ -1,0 +1,16 @@
+version: '2.1'
+services:
+  ip-location:
+    ports:
+     - 8080
+    build: .
+    environment:
+      ENV_ID: dev
+      REGION_NAME: ${REGION_NAME}
+      SERVICE_8080_NAME: ip-location
+      SERVICE_8080_CHECK_HTTP: '/health-ip-location'
+      SERVICE_8080_CHECK_INTERVAL: 10s
+    command: /go/bin/freegeoip
+    mem_limit: 256m
+    memswap_limit: 256m
+    network_mode: bridge

@@ -42,6 +42,10 @@ type apiHandler struct {
 	nrapp newrelic.Application
 }
 
+type healthResponse struct{
+	Message string `json:"message"`
+}
+
 // NewHandler creates an http handler for the freegeoip server that
 // can be embedded in other servers.
 func NewHandler(c *Config) (http.Handler, error) {
@@ -63,6 +67,12 @@ func NewHandler(c *Config) (http.Handler, error) {
 	mux.GET("/csv/*host", f.register("csv", csvWriter))
 	mux.GET("/xml/*host", f.register("xml", xmlWriter))
 	mux.GET("/json/*host", f.register("json", jsonWriter))
+
+	mux.GET("/health-ip-location", func(w http.ResponseWriter, r *http.Request) {
+		resp := healthResponse{Message: "OK"}
+		json.NewEncoder(w).Encode(resp)
+	})
+
 	go watchEvents(db)
 	return mux, nil
 }

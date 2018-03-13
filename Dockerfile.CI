@@ -4,8 +4,8 @@ RUN \
 	apk add --no-cache git libcap shadow
 
 COPY cmd/freegeoip/public /var/www
-ADD . /go/src/github.com/apilayer/freegeoip
-WORKDIR /go/src/github.com/apilayer/freegeoip/cmd/freegeoip
+ADD . /go/src/freegeoip
+WORKDIR /go/src/freegeoip/cmd/freegeoip
 RUN \
 	go get -d && \
 	go install && \
