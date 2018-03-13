@@ -26,7 +26,7 @@ services:
           - node.labels.com.pipedrive.nodegroup == ${NODE_GROUP:-default}
       labels:
         - com.docker.ucp.access.label=/Shared
-   environment:
+    environment:
       ENV_ID: ${ENV_ID}
       REGION_NAME: ${REGION_NAME}
       SERVICE_8080_NAME: ip-location
