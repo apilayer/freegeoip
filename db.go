@@ -31,6 +31,10 @@ var (
 	// downloaded in background.
 	ErrUnavailable = errors.New("no database available")
 
+	// ErrNotFound may be returned by DB.Lookup when IP was not found
+	// on database
+	ErrNotFound = errors.New("no ip found on database")
+
 	// Local cached copy of a database downloaded from a URL.
 	defaultDB = filepath.Join(os.TempDir(), "freegeoip", "db.gz")
 
@@ -403,7 +407,15 @@ func (db *DB) Lookup(addr net.IP, result interface{}) error {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 	if db.reader != nil {
-		return db.reader.Lookup(addr, result)
+		offset, err := db.reader.LookupOffset(addr)
+		if err != nil {
+			return err
+		}
+		if offset == maxminddb.NotFound {
+			return ErrNotFound
+		}
+		return db.reader.Decode(offset, result)
+
 	}
 	return ErrUnavailable
 }

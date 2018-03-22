@@ -183,14 +183,28 @@ func (f *apiHandler) iplookup(writer writerFunc) http.HandlerFunc {
 			return
 		}
 		ip, q := ips[rand.Intn(len(ips))], &geoipQuery{}
-		err = f.db.Lookup(ip, &q.DefaultQuery)
-		if err != nil {
-			http.Error(w, "Try again later.", http.StatusServiceUnavailable)
+		if errExists, code, message := getErrorValues(f.conf, f.db.Lookup(ip, &q.DefaultQuery)); errExists {
+			http.Error(w, message, code)
 			return
 		}
 		w.Header().Set("X-Database-Date", f.db.Date().Format(http.TimeFormat))
 		resp := q.Record(ip, r.Header.Get("Accept-Language"))
 		writer(w, r, resp)
+	}
+}
+
+func getErrorValues(conf *Config, err error) (bool, int, string) {
+	switch err {
+	case freegeoip.ErrNotFound:
+		if conf.FailOnIPNotFound {
+			return true, http.StatusNotFound, "IP not found."
+		}
+		return false, 0, "" //retrocompatibility
+	case nil:
+		return false, 0, ""
+	default:
+		return true, http.StatusServiceUnavailable, "Try again later."
+
 	}
 }
 

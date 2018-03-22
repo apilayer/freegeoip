@@ -35,6 +35,7 @@ type Config struct {
 	ReadTimeout         time.Duration `envconfig:"READ_TIMEOUT"`
 	WriteTimeout        time.Duration `envconfig:"WRITE_TIMEOUT"`
 	PublicDir           string        `envconfig:"PUBLIC"`
+	FailOnIPNotFound    bool          `envconfig:"FAIL_ON_IP_NOTFOUND"`
 	DB                  string        `envconfig:"DB"`
 	UpdateInterval      time.Duration `envconfig:"UPDATE_INTERVAL"`
 	RetryInterval       time.Duration `envconfig:"RETRY_INTERVAL"`
@@ -114,6 +115,7 @@ func (c *Config) AddFlags(fs *flag.FlagSet) {
 	fs.DurationVar(&c.ReadTimeout, "read-timeout", c.ReadTimeout, "Read timeout for HTTP and HTTPS client conns")
 	fs.DurationVar(&c.WriteTimeout, "write-timeout", c.WriteTimeout, "Write timeout for HTTP and HTTPS client conns")
 	fs.StringVar(&c.PublicDir, "public", c.PublicDir, "Public directory to serve at the {prefix}/ endpoint")
+	fs.BoolVar(&c.FailOnIPNotFound, "fail-on-ip-notfound", c.UseXForwardedFor, "Fail request on ip not found")
 	fs.StringVar(&c.DB, "db", c.DB, "IP database file or URL")
 	fs.DurationVar(&c.UpdateInterval, "update", c.UpdateInterval, "Database update check interval")
 	fs.DurationVar(&c.RetryInterval, "retry", c.RetryInterval, "Max time to wait before retrying to download database")
