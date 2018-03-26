@@ -7,12 +7,15 @@ package apiserver
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/apilayer/freegeoip"
 )
 
 func newTestHandler() (http.Handler, error) {
@@ -146,5 +149,31 @@ func testParseAcceptLanguage(t *testing.T, names map[string]string, header strin
 
 	if result != language {
 		t.Fatalf("Parsed language '%s' from header '%s'  doesn't match language '%s'", result, header, language)
+	}
+}
+
+func TestGetErrorValues(t *testing.T) {
+	testGetErrorValues(t, "error nil", &Config{FailOnIPNotFound: false}, nil, false, 0, "")
+	testGetErrorValues(t, "generic error", &Config{FailOnIPNotFound: false}, errors.New("generic error"), true, 503, "Try again later.")
+	testGetErrorValues(t, "unavailable error", &Config{FailOnIPNotFound: false}, freegeoip.ErrUnavailable, true, 503, "Try again later.")
+	testGetErrorValues(t, "not found error", &Config{FailOnIPNotFound: false}, freegeoip.ErrNotFound, false, 0, "") //retrocompatibility
+
+	testGetErrorValues(t, "error nil", &Config{FailOnIPNotFound: true}, nil, false, 0, "")
+	testGetErrorValues(t, "generic error", &Config{FailOnIPNotFound: true}, errors.New("generic error"), true, 503, "Try again later.")
+	testGetErrorValues(t, "unavailable error", &Config{FailOnIPNotFound: true}, freegeoip.ErrUnavailable, true, 503, "Try again later.")
+	testGetErrorValues(t, "not found error", &Config{FailOnIPNotFound: true}, freegeoip.ErrNotFound, true, 404, "IP not found.")
+}
+
+func testGetErrorValues(t *testing.T, test string, conf *Config, err error, isErr bool, code int, msg string) {
+	rIsErr, rCode, rMsg := getErrorValues(conf, err)
+
+	if isErr != rIsErr {
+		t.Fatalf("%s: Is error '%t' doesn't match '%t'", test, isErr, rIsErr)
+	}
+	if code != rCode {
+		t.Fatalf("%s: Code '%d' doesn't match '%d'", test, code, rCode)
+	}
+	if msg != rMsg {
+		t.Fatalf("%s: Message '%s' doesn't match '%s'", test, msg, rMsg)
 	}
 }

@@ -93,20 +93,20 @@ func TestNeedUpdateSameFile(t *testing.T) {
 }
 
 func TestNeedUpdateSameMD5(t *testing.T) {
-  db := &DB{file: testFile}
-  _, checksum, err := db.newReader(db.file)
-  if err != nil {
-    t.Fatal(err)
-  }
-  db.checksum = checksum
+	db := &DB{file: testFile}
+	_, checksum, err := db.newReader(db.file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.checksum = checksum
 	mux := http.NewServeMux()
-  changeHeaderThenServe := func(h http.Handler) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-      w.Header().Add("X-Database-MD5", checksum)
-      h.ServeHTTP(w, r)
-    }
-  }
-  mux.Handle("/testdata/", changeHeaderThenServe(http.FileServer(http.Dir("."))))
+	changeHeaderThenServe := func(h http.Handler) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("X-Database-MD5", checksum)
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("/testdata/", changeHeaderThenServe(http.FileServer(http.Dir("."))))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 	yes, err := db.needUpdate(srv.URL + "/" + testFile)
@@ -120,13 +120,13 @@ func TestNeedUpdateSameMD5(t *testing.T) {
 
 func TestNeedUpdateMD5(t *testing.T) {
 	mux := http.NewServeMux()
-  changeHeaderThenServe := func(h http.Handler) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-      w.Header().Add("X-Database-MD5", "9823y5981y2398y1234")
-      h.ServeHTTP(w, r)
-    }
-  }
-  mux.Handle("/testdata/", changeHeaderThenServe(http.FileServer(http.Dir("."))))
+	changeHeaderThenServe := func(h http.Handler) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("X-Database-MD5", "9823y5981y2398y1234")
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("/testdata/", changeHeaderThenServe(http.FileServer(http.Dir("."))))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 	db := &DB{file: testFile}
@@ -327,5 +327,18 @@ func TestLookuUnavailable(t *testing.T) {
 	err := db.Lookup(net.ParseIP("8.8.8.8"), nil)
 	if err == nil {
 		t.Fatal("Unexpected lookup worked")
+	}
+}
+
+func TestLookupNotFound(t *testing.T) {
+	db, err := Open(testFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var record DefaultQuery
+	err = db.Lookup(net.ParseIP("0.0.0.0"), &record)
+	if err != ErrNotFound {
+		t.Fatal("Unexpected error found: ", err)
 	}
 }
