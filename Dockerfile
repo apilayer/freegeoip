@@ -16,6 +16,9 @@ ENTRYPOINT ["/go/bin/freegeoip"]
 
 EXPOSE 8080
 
+ENV QUOTA_MAX=0
+ENV LOGTOSTDOUT=true
+
 # CMD instructions:
 # Add  "-use-x-forwarded-for"      if your server is behind a reverse proxy
 # Add  "-public", "/var/www"       to enable the web front-end
