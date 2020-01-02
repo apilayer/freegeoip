@@ -23,6 +23,7 @@ import (
 
 	"github.com/howeyc/fsnotify"
 	"github.com/oschwald/maxminddb-golang"
+	"log"
 )
 
 var (
@@ -273,12 +274,21 @@ func (db *DB) runUpdate(url string) error {
 }
 
 func (db *DB) needUpdate(url string) (bool, error) {
+	logger.Print("needUpdate start");
 	stat, err := os.Stat(db.file)
+	logger.Print("stat");
+	logger.Print(&stat);
+	logger.Print("err");
+	logger.Print(&err);
 	if err != nil {
 		return true, nil // Local db is missing, must be downloaded.
 	}
 
 	resp, err := http.Head(url)
+	logger.Print("resp");
+	logger.Print(&resp);
+	logger.Print("err");
+	logger.Print(&err);
 	if err != nil {
 		return false, err
 	}
