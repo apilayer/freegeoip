@@ -274,21 +274,21 @@ func (db *DB) runUpdate(url string) error {
 }
 
 func (db *DB) needUpdate(url string) (bool, error) {
-	logger.Print("needUpdate start");
+	log.Print("needUpdate start");
 	stat, err := os.Stat(db.file)
-	logger.Print("stat");
-	logger.Print(&stat);
-	logger.Print("err");
-	logger.Print(&err);
+	log.Print("stat");
+	log.Print(&stat);
+	log.Print("err");
+	log.Print(&err);
 	if err != nil {
 		return true, nil // Local db is missing, must be downloaded.
 	}
 
 	resp, err := http.Head(url)
-	logger.Print("resp");
-	logger.Print(&resp);
-	logger.Print("err");
-	logger.Print(&err);
+	log.Print("resp");
+	log.Print(&resp);
+	log.Print("err");
+	log.Print(&err);
 	if err != nil {
 		return false, err
 	}
