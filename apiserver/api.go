@@ -45,12 +45,7 @@ type apiHandler struct {
 // NewHandler creates an http handler for the freegeoip server that
 // can be embedded in other servers.
 func NewHandler(c *Config) (http.Handler, error) {
-	log.Print("In NewHandler");
 	db, err := openDB(c)
-	log.Print("db");
-	log.Print(db);
-	log.Print("err");
-	log.Print(err);
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
@@ -328,7 +323,6 @@ func (rr *responseRecord) String() string {
 
 // openDB opens and returns the IP database file or URL.
 func openDB(c *Config) (*freegeoip.DB, error) {
-	log.Print("In openDB");
 	// This is a paid product. Get the updates URL.
 	if len(c.UserID) > 0 && len(c.LicenseKey) > 0 {
 		var err error
