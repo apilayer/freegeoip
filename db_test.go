@@ -14,9 +14,10 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	"log"
 )
 
-var testFile = "testdata/db.gz"
+var testFile = "testdata/db.tar.gz"
 
 func TestMaxMindUpdateURL(t *testing.T) {
 	UserID := "hello"
@@ -313,6 +314,8 @@ func TestLookupOnURL(t *testing.T) {
 		t.Fatal("Timed out")
 	}
 	var record DefaultQuery
+	log.Print("db");
+	log.Print(db);
 	err = db.Lookup(net.ParseIP("8.8.8.8"), &record)
 	if err != nil {
 		t.Fatal(err)

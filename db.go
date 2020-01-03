@@ -5,6 +5,7 @@
 package freegeoip
 
 import (
+	"archive/tar"
 	"compress/gzip"
 	"crypto/md5"
 	"encoding/hex"
@@ -24,6 +25,7 @@ import (
 	"github.com/howeyc/fsnotify"
 	"github.com/oschwald/maxminddb-golang"
 	"log"
+	"strings"
 )
 
 var (
@@ -150,11 +152,20 @@ func OpenURL(url string, updateInterval, maxRetryInterval time.Duration) (*DB, e
 }
 
 func (db *DB) watchFile() error {
+	log.Print("In watchFile");
 	watcher, err := fsnotify.NewWatcher()
+	log.Print("watcher");
+	log.Print(watcher);
+	log.Print("err");
+	log.Print(err);
 	if err != nil {
 		return err
 	}
 	dbdir, err := db.makeDir()
+	log.Print("dbdir");
+	log.Print(dbdir);
+	log.Print("err");
+	log.Print(err);
 	if err != nil {
 		return err
 	}
@@ -167,6 +178,8 @@ func (db *DB) watchEvents(watcher *fsnotify.Watcher) {
 		select {
 		case ev := <-watcher.Event:
 			if ev.Name == db.file && (ev.IsCreate() || ev.IsModify()) {
+				log.Print("ev.Name");
+				log.Print(ev.Name);
 				db.openFile()
 			}
 		case <-watcher.Error:
@@ -180,6 +193,10 @@ func (db *DB) watchEvents(watcher *fsnotify.Watcher) {
 
 func (db *DB) openFile() error {
 	reader, checksum, err := db.newReader(db.file)
+	log.Print("reader, checksum, err ");
+	//log.Print(reader);
+	log.Print(checksum);
+	log.Print(err);
 	if err != nil {
 		return err
 	}
@@ -197,18 +214,55 @@ func (db *DB) newReader(dbfile string) (*maxminddb.Reader, string, error) {
 		return nil, "", err
 	}
 	defer f.Close()
+
+
+
 	gzf, err := gzip.NewReader(f)
-	if err != nil {
-		return nil, "", err
+	log.Print("gzf");
+	log.Print(gzf);
+	tarReader := tar.NewReader(gzf)
+
+	i := 0
+	for {
+		log.Print("i");
+		log.Print(i);
+
+		header, err := tarReader.Next()
+		log.Print("header");
+		log.Print(header);
+		log.Print("err");
+		log.Print(err);
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		
+		name := header.Name
+		if(strings.HasSuffix(name, ".mmdb")) {
+			log.Print("header");
+			log.Print(header);
+			// log.Print(tarReader);
+			b, err := ioutil.ReadAll(tarReader)
+			log.Print("b");
+			//log.Print(b);
+			if err != nil {
+				return nil, "", err
+			}
+			checksum := fmt.Sprintf("%x", md5.Sum(b))
+			log.Print("checksum");
+			log.Print(checksum);
+			mmdb, err := maxminddb.FromBytes(b)
+			log.Print("mmdb");
+			// log.Print(mmdb);
+			return mmdb, checksum, err
+		} else {
+			continue
+		}
 	}
-	defer gzf.Close()
-	b, err := ioutil.ReadAll(gzf)
-	if err != nil {
-		return nil, "", err
-	}
-	checksum := fmt.Sprintf("%x", md5.Sum(b))
-	mmdb, err := maxminddb.FromBytes(b)
-	return mmdb, checksum, err
+	return nil, "", err
 }
 
 func (db *DB) setReader(reader *maxminddb.Reader, modtime time.Time, checksum string) {
@@ -235,6 +289,9 @@ func (db *DB) autoUpdate(url string) {
 	for {
 		db.sendInfo("starting update")
 		err := db.runUpdate(url)
+		log.Print("finish update");
+		log.Print("err");
+		log.Print(err);
 		if err != nil {
 			bs := backoff.Seconds()
 			ms := db.maxRetryInterval.Seconds()
@@ -255,12 +312,15 @@ func (db *DB) autoUpdate(url string) {
 
 func (db *DB) runUpdate(url string) error {
 	yes, err := db.needUpdate(url)
+	log.Print("yes");
+	log.Print(yes);
 	if err != nil {
 		return err
 	}
-	if !yes {
-		return nil
-	}
+	// if !yes {
+	// 	return nil
+	// }
+	yes=true;
 	tmpfile, err := db.download(url)
 	if err != nil {
 		return err
@@ -277,18 +337,18 @@ func (db *DB) needUpdate(url string) (bool, error) {
 	log.Print("needUpdate start");
 	stat, err := os.Stat(db.file)
 	log.Print("stat");
-	log.Print(&stat);
+	log.Print(stat);
 	log.Print("err");
-	log.Print(&err);
+	log.Print(err);
 	if err != nil {
 		return true, nil // Local db is missing, must be downloaded.
 	}
 
 	resp, err := http.Head(url)
 	log.Print("resp");
-	log.Print(&resp);
+	log.Print(resp);
 	log.Print("err");
-	log.Print(&err);
+	log.Print(err);
 	if err != nil {
 		return false, err
 	}
@@ -296,10 +356,14 @@ func (db *DB) needUpdate(url string) (bool, error) {
 
 	// Check X-Database-MD5 if it exists
 	headerMd5 := resp.Header.Get("X-Database-MD5")
+	log.Print("headerMd5");
+	log.Print(headerMd5);
 	if len(headerMd5) > 0 && db.checksum != headerMd5 {
 		return true, nil
 	}
 
+	log.Print("stat.Size()");
+	log.Print(stat);
 	if stat.Size() != resp.ContentLength {
 		return true, nil
 	}
@@ -307,7 +371,12 @@ func (db *DB) needUpdate(url string) (bool, error) {
 }
 
 func (db *DB) download(url string) (tmpfile string, err error) {
+	log.Print("In download");
 	resp, err := http.Get(url)
+	log.Print("resp");
+	log.Print(resp);
+	log.Print("err");
+	log.Print(err);
 	if err != nil {
 		return "", err
 	}
@@ -315,6 +384,10 @@ func (db *DB) download(url string) (tmpfile string, err error) {
 	tmpfile = filepath.Join(os.TempDir(),
 		fmt.Sprintf("_freegeoip.%d.db.gz", time.Now().UnixNano()))
 	f, err := os.Create(tmpfile)
+	log.Print("tmpfile");
+	log.Print(tmpfile);
+	log.Print("err");
+	log.Print(err);
 	if err != nil {
 		return "", err
 	}
@@ -339,6 +412,7 @@ func (db *DB) makeDir() (dbdir string, err error) {
 }
 
 func (db *DB) renameFile(name string) error {
+	log.Print("In renameFile");
 	os.Rename(db.file, db.file+".bak") // Optional, might fail.
 	_, err := db.makeDir()
 	if err != nil {

@@ -20,7 +20,7 @@ func newTestHandler() (http.Handler, error) {
 	c := NewConfig()
 	c.APIPrefix = "/api"
 	c.PublicDir = "."
-	c.DB = filepath.Join(filepath.Dir(f), "../testdata/db.gz")
+	c.DB = filepath.Join(filepath.Dir(f), "../testdata/db.tar.gz")
 	c.RateLimitLimit = 5
 	c.RateLimitBackend = "map"
 	c.Silent = true
