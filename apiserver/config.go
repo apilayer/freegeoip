@@ -6,14 +6,11 @@ package apiserver
 
 import (
 	"flag"
+	"github.com/kelseyhightower/envconfig"
 	"io"
 	"log"
 	"os"
 	"time"
-
-	"github.com/kelseyhightower/envconfig"
-
-	"github.com/apilayer/freegeoip"
 )
 
 // Config is the configuration of the freegeoip server.
@@ -79,7 +76,6 @@ func NewConfig() *Config {
 		CORSOrigin:          "*",
 		ReadTimeout:         30 * time.Second,
 		WriteTimeout:        15 * time.Second,
-		DB:                  freegeoip.MaxMindDB,
 		UpdateInterval:      24 * time.Hour,
 		RetryInterval:       2 * time.Hour,
 		LogTimestamp:        true,
@@ -89,8 +85,8 @@ func NewConfig() *Config {
 		MemcacheTimeout:     time.Second,
 		RateLimitBackend:    "redis",
 		RateLimitInterval:   time.Hour,
-		UpdatesHost:         "updates.maxmind.com",
-		ProductID:           "GeoIP2-City",
+		UpdatesHost:         "download.maxmind.com",
+		ProductID:           "GeoLite2-City",
 	}
 }
 

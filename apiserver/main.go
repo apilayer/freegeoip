@@ -17,7 +17,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/fiorix/go-listener/listener"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/dnesting/client_golang/prometheus"
 )
 
 // Version tag.

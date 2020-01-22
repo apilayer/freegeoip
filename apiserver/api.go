@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/dnesting/client_golang/prometheus"
 	"github.com/fiorix/go-redis/redis"
 	"github.com/go-web/httplog"
 	"github.com/go-web/httpmux"
@@ -28,7 +29,6 @@ import (
 	"github.com/go-web/httprl/memcacherl"
 	"github.com/go-web/httprl/redisrl"
 	newrelic "github.com/newrelic/go-agent"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 	"golang.org/x/text/language"
 
@@ -156,6 +156,7 @@ type writerFunc func(w http.ResponseWriter, r *http.Request, d *responseRecord)
 
 func (f *apiHandler) register(name string, writer writerFunc) http.HandlerFunc {
 	var h http.Handler
+
 	if f.nrapp == nil {
 		h = prometheus.InstrumentHandler(name, f.iplookup(writer))
 	} else {
@@ -232,6 +233,8 @@ func (q *geoipQuery) Record(ip net.IP, lang string) *responseRecord {
 
 	r := &responseRecord{
 		IP:          ip.String(),
+		ContinentCode: q.Continent.Code,
+		ContinentName: q.Continent.Names[lang],
 		CountryCode: q.Country.ISOCode,
 		CountryName: q.Country.Names[lang],
 		City:        q.City.Names[lang],
@@ -240,6 +243,7 @@ func (q *geoipQuery) Record(ip net.IP, lang string) *responseRecord {
 		Latitude:    roundFloat(q.Location.Latitude, .5, 4),
 		Longitude:   roundFloat(q.Location.Longitude, .5, 4),
 		MetroCode:   q.Location.MetroCode,
+		AccuracyRadius:   q.Location.AccuracyRadius,
 	}
 	if len(q.Region) > 0 {
 		r.RegionCode = q.Region[0].ISOCode
@@ -287,6 +291,8 @@ func roundFloat(val float64, roundOn float64, places int) (newVal float64) {
 type responseRecord struct {
 	XMLName     xml.Name `xml:"Response" json:"-"`
 	IP          string   `json:"ip"`
+	ContinentCode string   `json:"continent_code"`
+	ContinentName string   `json:"continent_name"`
 	CountryCode string   `json:"country_code"`
 	CountryName string   `json:"country_name"`
 	RegionCode  string   `json:"region_code"`
@@ -297,6 +303,7 @@ type responseRecord struct {
 	Latitude    float64  `json:"latitude"`
 	Longitude   float64  `json:"longitude"`
 	MetroCode   uint     `json:"metro_code"`
+	AccuracyRadius   uint     `json:"accuracy_radius"`
 }
 
 func (rr *responseRecord) String() string {
@@ -315,6 +322,9 @@ func (rr *responseRecord) String() string {
 		strconv.FormatFloat(rr.Latitude, 'f', 4, 64),
 		strconv.FormatFloat(rr.Longitude, 'f', 4, 64),
 		strconv.Itoa(int(rr.MetroCode)),
+		rr.ContinentCode,
+		rr.ContinentName,
+		strconv.Itoa(int(rr.AccuracyRadius)),
 	})
 	w.Flush()
 	return b.String()
@@ -322,26 +332,17 @@ func (rr *responseRecord) String() string {
 
 // openDB opens and returns the IP database file or URL.
 func openDB(c *Config) (*freegeoip.DB, error) {
-	// This is a paid product. Get the updates URL.
-	if len(c.UserID) > 0 && len(c.LicenseKey) > 0 {
-		var err error
-		c.DB, err = freegeoip.MaxMindUpdateURL(
-			c.UpdatesHost,
-			c.ProductID,
-			c.UserID,
-			c.LicenseKey,
-		)
-		if err != nil {
-			return nil, err
-		}
-		log.Println("Using updates URL:", c.DB)
-	}
-
 	u, err := url.Parse(c.DB)
-	if err != nil || len(u.Scheme) == 0 {
+	if err != nil || len(u.Scheme) == 0 && len(c.DB) > 0 {
 		return freegeoip.Open(c.DB)
 	}
-	return freegeoip.OpenURL(c.DB, c.UpdateInterval, c.RetryInterval)
+
+	updateUrl, err := freegeoip.MaxMindUpdateURL(c.UpdatesHost, c.ProductID, c.LicenseKey)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Using updates URL:", c.DB)
+	return freegeoip.OpenURL(updateUrl, c.UpdateInterval, c.RetryInterval)
 }
 
 // watchEvents logs and collect metrics of database events.
