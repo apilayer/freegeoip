@@ -141,7 +141,7 @@ func (c *Config) logWriter() io.Writer {
 	if c.LogToStdout {
 		return os.Stdout
 	}
-	return os.Stderr
+	return log.Writer()
 }
 
 func (c *Config) errorLogger() *log.Logger {
